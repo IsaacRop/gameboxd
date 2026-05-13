@@ -1,4 +1,6 @@
 import httpx
+from django.db.models import TextField
+from django.db.models.functions import Cast
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -30,14 +32,48 @@ class GameSearchView(APIView):
 
 
 class GameListView(generics.ListAPIView):
+    """
+    Lista jogos com suporte a filtros:
+    - ?name=texto — título (parcial, case-insensitive)
+    - ?genre=RPG — gênero (parcial, case-insensitive)
+    - ?platform=PlayStation — plataforma (parcial, case-insensitive)
+    - ?rating_min=3.0 — rating mínimo
+    - ?search=texto — busca em título e sumário
+    - ?ordering=title,rating,release_year (- para decrescente)
+    """
     permission_classes = [IsAuthenticated]
     serializer_class = GameSerializer
+    search_fields = ["title", "summary"]
+    ordering_fields = ["title", "rating", "release_year"]
+    ordering = ["title"]
 
     def get_queryset(self):
         qs = Game.objects.all()
-        name = self.request.query_params.get("name", "").strip()
+        params = self.request.query_params
+
+        name = params.get("name", "").strip()
         if name:
             qs = qs.filter(title__icontains=name)
+
+        genre = params.get("genre", "").strip()
+        if genre:
+            qs = qs.annotate(
+                _genres_text=Cast("genres", output_field=TextField())
+            ).filter(_genres_text__icontains=genre)
+
+        platform = params.get("platform", "").strip()
+        if platform:
+            qs = qs.annotate(
+                _platforms_text=Cast("platforms", output_field=TextField())
+            ).filter(_platforms_text__icontains=platform)
+
+        rating_min = params.get("rating_min", "").strip()
+        if rating_min:
+            try:
+                qs = qs.filter(rating__gte=float(rating_min))
+            except ValueError:
+                pass
+
         return qs
 
 
