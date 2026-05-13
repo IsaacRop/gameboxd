@@ -13,11 +13,18 @@ User = get_user_model()
 class UserFactory(DjangoModelFactory):
     class Meta:
         model = User
+        skip_postgeneration_save = True
 
     username = factory.Sequence(lambda n: f"user_{n}")
     email = factory.LazyAttribute(lambda o: f"{o.username}@test.com")
-    password = factory.PostGenerationMethodCall("set_password", "testpass123")
     bio = factory.Faker("text", max_nb_chars=100)
+
+    @factory.post_generation
+    def password(self, create, extracted, **kwargs):
+        if not create:
+            return
+        self.set_password(extracted or "testpass123")
+        self.save(update_fields=["password"])
 
 
 class GameFactory(DjangoModelFactory):
