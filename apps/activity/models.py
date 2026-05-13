@@ -18,7 +18,7 @@ class Log(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES)
     played_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True, db_index=True)
 
     class Meta:
         db_table = "activity_log"
@@ -34,7 +34,7 @@ class List(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     is_public = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -109,7 +109,7 @@ class ActivityFeed(models.Model):
     followed_user = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="feed_follow_events"
     )
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         db_table = "activity_activityfeed"

@@ -6,7 +6,7 @@ from django.db import models
 class Game(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     igdb_id = models.IntegerField(unique=True)
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255, db_index=True)
     slug = models.SlugField(max_length=255, unique=True)
     cover_url = models.URLField(blank=True)
     summary = models.TextField(blank=True)
