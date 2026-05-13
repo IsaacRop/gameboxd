@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from config.pagination import GameCursorPagination
 from apps.games.models import Game
 from apps.games.serializers import GameSerializer
 from apps.games.services import search_and_sync
@@ -42,6 +43,7 @@ class GameListView(generics.ListAPIView):
     - ?ordering=title,rating,release_year (- para decrescente)
     """
     permission_classes = [IsAuthenticated]
+    pagination_class = GameCursorPagination
     serializer_class = GameSerializer
     search_fields = ["title", "summary"]
     ordering_fields = ["title", "rating", "release_year"]

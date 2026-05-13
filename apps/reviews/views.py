@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from config.pagination import StandardCursorPagination
 from apps.reviews.filters import ReviewFilter
 from apps.reviews.models import Like, Review
 from apps.reviews.permissions import IsOwnerOrReadOnly
@@ -42,6 +43,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
     - ?ordering=rating,-created_at — ordenação (- para decrescente)
     """
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardCursorPagination
     filterset_class = ReviewFilter
     search_fields = ["game__title", "body"]
     ordering_fields = ["rating", "created_at", "likes_count"]

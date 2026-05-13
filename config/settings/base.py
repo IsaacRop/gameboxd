@@ -92,7 +92,7 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "config.pagination.StandardCursorPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_THROTTLE_CLASSES": [
@@ -111,9 +111,18 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Gameboxd API",
-    "DESCRIPTION": "Letterboxd para video games — REST API",
-    "VERSION": "1.0.0",
+    "TITLE": "SavePoint API",
+    "DESCRIPTION": (
+        "API REST da plataforma SavePoint.\n\n"
+        "## Paginação\n\n"
+        "Todos os endpoints de lista usam cursor-based pagination.\n"
+        "A resposta inclui os campos `next` e `previous` com cursores opacos.\n\n"
+        "Exemplo de uso:\n"
+        "- Primeira página: `GET /api/reviews/`\n"
+        "- Próxima página: `GET /api/reviews/?cursor=<valor_do_campo_next>`\n"
+        "- page_size personalizável: `GET /api/reviews/?page_size=10` (máx 100)\n"
+    ),
+    "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
 

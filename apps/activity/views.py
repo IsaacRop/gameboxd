@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from config.pagination import FeedCursorPagination, GameLogCursorPagination, StandardCursorPagination
 from apps.activity.filters import GameLogFilter
 from apps.activity.models import ActivityFeed, List, ListGame, Log
 from apps.activity.serializers import (
@@ -43,6 +44,7 @@ class GameLogListCreateView(generics.ListCreateAPIView):
     - ?ordering=updated_at,game__title,status (- para decrescente)
     """
     permission_classes = [IsAuthenticated]
+    pagination_class = GameLogCursorPagination
     filterset_class = GameLogFilter
     search_fields = ["game__title"]
     ordering_fields = ["updated_at", "game__title", "status"]
@@ -113,6 +115,7 @@ class GameListListCreateView(generics.ListCreateAPIView):
     - ?ordering=title,created_at,updated_at (- para decrescente)
     """
     permission_classes = [IsAuthenticated]
+    pagination_class = StandardCursorPagination
     search_fields = ["title", "description"]
     ordering_fields = ["title", "created_at", "updated_at"]
     ordering = ["-updated_at"]
@@ -216,6 +219,7 @@ def _feed_qs(filters):
 
 class FeedView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    pagination_class = FeedCursorPagination
     serializer_class = ActivityFeedSerializer
 
     def get_queryset(self):
@@ -230,18 +234,16 @@ class FeedView(generics.ListAPIView):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             response = self.get_paginated_response(serializer.data)
-            if not qs.exists():
+            if not page:
                 response.data["message"] = "Siga outros jogadores para ver o feed."
             return response
         serializer = self.get_serializer(qs, many=True)
-        data = serializer.data
-        if not data:
-            return Response({"message": "Siga outros jogadores para ver o feed.", "results": []})
-        return Response(data)
+        return Response({"message": "Siga outros jogadores para ver o feed.", "results": []})
 
 
 class UserActivityView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
+    pagination_class = FeedCursorPagination
     serializer_class = ActivityFeedSerializer
 
     def get_queryset(self):
