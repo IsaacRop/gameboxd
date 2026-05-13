@@ -76,3 +76,41 @@ class Activity(models.Model):
     class Meta:
         db_table = "activity_activity"
         ordering = ["-created_at"]
+
+
+class ActivityFeed(models.Model):
+    REVIEW_CREATED = "review_created"
+    LOG_UPDATED = "log_updated"
+    LIST_CREATED = "list_created"
+    FOLLOW = "follow"
+
+    EVENT_CHOICES = [
+        (REVIEW_CREATED, "Review Created"),
+        (LOG_UPDATED, "Log Updated"),
+        (LIST_CREATED, "List Created"),
+        (FOLLOW, "Follow"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="feed_events", on_delete=models.CASCADE
+    )
+    event_type = models.CharField(max_length=20, choices=EVENT_CHOICES)
+
+    review = models.ForeignKey(
+        "reviews.Review", null=True, blank=True, on_delete=models.CASCADE, related_name="feed_events"
+    )
+    game_log = models.ForeignKey(
+        Log, null=True, blank=True, on_delete=models.CASCADE, related_name="feed_events"
+    )
+    game_list = models.ForeignKey(
+        List, null=True, blank=True, on_delete=models.CASCADE, related_name="feed_events"
+    )
+    followed_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.CASCADE, related_name="feed_follow_events"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "activity_activityfeed"
+        ordering = ["-created_at"]
