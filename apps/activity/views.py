@@ -26,7 +26,7 @@ def _log_qs(user):
     return (
         Log.objects
         .filter(user=user)
-        .select_related("game")
+        .select_related("game", "user")
         .order_by("-updated_at")
     )
 
@@ -92,7 +92,7 @@ def _list_qs():
     return (
         List.objects
         .select_related("user")
-        .annotate(games_count=Count("games"))
+        .annotate(games_count=Count("games", distinct=True))
         .order_by("-updated_at")
     )
 
@@ -102,7 +102,7 @@ def _list_detail_qs():
         List.objects
         .select_related("user")
         .prefetch_related("games__game")
-        .annotate(games_count=Count("games"))
+        .annotate(games_count=Count("games", distinct=True))
         .order_by("-updated_at")
     )
 
@@ -208,8 +208,10 @@ def _feed_qs(filters):
         .select_related(
             "user",
             "review__game",
+            "review__user",
             "game_log__game",
-            "game_list",
+            "game_log__user",
+            "game_list__user",
             "followed_user",
         )
         .prefetch_related("game_list__games")
