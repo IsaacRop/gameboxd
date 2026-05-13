@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from apps.activity.models import List, Log
+from apps.activity.models import ActivityFeed, List, Log
 from apps.games.models import Game
 
 User = get_user_model()
@@ -102,3 +102,54 @@ class AddGameToListSerializer(serializers.Serializer):
         if not Game.objects.filter(id=value).exists():
             raise serializers.ValidationError("Jogo não encontrado.")
         return value
+
+
+class _FeedUserSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ("id", "username", "avatar")
+        read_only_fields = fields
+
+    def get_avatar(self, obj):
+        return obj.avatar.url if obj.avatar else None
+
+
+class ActivityFeedSerializer(serializers.ModelSerializer):
+    user = _FeedUserSerializer(read_only=True)
+    payload = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ActivityFeed
+        fields = ("id", "user", "event_type", "payload", "created_at")
+        read_only_fields = fields
+
+    def get_payload(self, obj):
+        et = obj.event_type
+        if et == ActivityFeed.REVIEW_CREATED and obj.review_id:
+            return {
+                "game_title": obj.review.game.title,
+                "game_cover_url": obj.review.game.cover_url,
+                "rating": str(obj.review.rating),
+                "body_preview": obj.review.body[:120],
+                "contains_spoiler": obj.review.contains_spoiler,
+            }
+        if et == ActivityFeed.LOG_UPDATED and obj.game_log_id:
+            return {
+                "game_title": obj.game_log.game.title,
+                "game_cover_url": obj.game_log.game.cover_url,
+                "status": obj.game_log.status,
+            }
+        if et == ActivityFeed.LIST_CREATED and obj.game_list_id:
+            return {
+                "list_id": str(obj.game_list.id),
+                "list_title": obj.game_list.title,
+                "games_count": len(obj.game_list.games.all()),
+            }
+        if et == ActivityFeed.FOLLOW and obj.followed_user_id:
+            return {
+                "followed_username": obj.followed_user.username,
+                "followed_avatar": obj.followed_user.avatar.url if obj.followed_user.avatar else None,
+            }
+        return {}
