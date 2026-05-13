@@ -7,6 +7,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from config.pagination import StandardCursorPagination
+
 from apps.users.models import Follow, User
 from apps.users.serializers import (
     LoginSerializer,
@@ -166,6 +168,7 @@ class FollowView(APIView):
 
 class FollowersListView(generics.ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = StandardCursorPagination
     serializer_class = PublicUserSerializer
 
     def get_queryset(self):
@@ -181,6 +184,7 @@ class FollowersListView(generics.ListAPIView):
 
 class FollowingListView(generics.ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
+    pagination_class = StandardCursorPagination
     serializer_class = PublicUserSerializer
 
     def get_queryset(self):
