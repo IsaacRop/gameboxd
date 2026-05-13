@@ -116,6 +116,7 @@ class PublicProfileView(generics.RetrieveAPIView):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         ctx["request"] = self.request
+        ctx["following_ids"] = _following_ids_for(self.request.user)
         return ctx
 
 
@@ -166,6 +167,12 @@ class FollowView(APIView):
 
 # ── Followers / Following lists ───────────────────────────────────────────────
 
+def _following_ids_for(user):
+    if not user or not user.is_authenticated:
+        return None
+    return set(Follow.objects.filter(follower=user).values_list("following_id", flat=True))
+
+
 class FollowersListView(generics.ListAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     pagination_class = StandardCursorPagination
@@ -179,6 +186,7 @@ class FollowersListView(generics.ListAPIView):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         ctx["request"] = self.request
+        ctx["following_ids"] = _following_ids_for(self.request.user)
         return ctx
 
 
@@ -195,4 +203,5 @@ class FollowingListView(generics.ListAPIView):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         ctx["request"] = self.request
+        ctx["following_ids"] = _following_ids_for(self.request.user)
         return ctx
