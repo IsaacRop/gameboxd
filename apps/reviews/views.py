@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.reviews.filters import ReviewFilter
 from apps.reviews.models import Like, Review
 from apps.reviews.permissions import IsOwnerOrReadOnly
 from apps.reviews.serializers import (
@@ -25,28 +26,32 @@ def _review_qs():
 
 
 class ReviewListCreateView(generics.ListCreateAPIView):
+    """
+    Lista reviews com suporte a filtros:
+    - ?rating=5 — nota exata
+    - ?rating_min=3 — nota mínima
+    - ?rating_max=4 — nota máxima
+    - ?contains_spoiler=false
+    - ?genre=RPG — gênero do jogo (parcial, case-insensitive)
+    - ?platform=PlayStation — plataforma do jogo (parcial, case-insensitive)
+    - ?game={uuid} — UUID do jogo
+    - ?user=username — reviews de um usuário
+    - ?created_after=2026-01-01 — criadas depois desta data
+    - ?created_before=2026-12-31
+    - ?search=texto — busca em título do jogo e corpo da review
+    - ?ordering=rating,-created_at — ordenação (- para decrescente)
+    """
     permission_classes = [IsAuthenticated]
+    filterset_class = ReviewFilter
+    search_fields = ["game__title", "body"]
+    ordering_fields = ["rating", "created_at", "likes_count"]
+    ordering = ["-created_at"]
 
     def get_serializer_class(self):
         return CreateReviewSerializer if self.request.method == "POST" else ReviewSerializer
 
     def get_queryset(self):
-        qs = _review_qs()
-        params = self.request.query_params
-
-        game_id = params.get("game")
-        if game_id:
-            qs = qs.filter(game_id=game_id)
-
-        username = params.get("user")
-        if username:
-            qs = qs.filter(user__username=username)
-
-        rating = params.get("rating")
-        if rating:
-            qs = qs.filter(rating=rating)
-
-        return qs
+        return _review_qs()
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()

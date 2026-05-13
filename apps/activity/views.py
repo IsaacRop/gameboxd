@@ -5,6 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.activity.filters import GameLogFilter
 from apps.activity.models import ActivityFeed, List, ListGame, Log
 from apps.activity.serializers import (
     ActivityFeedSerializer,
@@ -30,20 +31,28 @@ def _log_qs(user):
 
 
 class GameLogListCreateView(generics.ListCreateAPIView):
+    """
+    Lista logs com suporte a filtros:
+    - ?status=completed|playing|dropped|want_to_play
+    - ?game={uuid} — UUID do jogo
+    - ?genre=RPG — gênero do jogo (parcial, case-insensitive)
+    - ?platform=PlayStation — plataforma (parcial, case-insensitive)
+    - ?updated_after=2026-01-01
+    - ?updated_before=2026-12-31
+    - ?search=texto — busca no título do jogo
+    - ?ordering=updated_at,game__title,status (- para decrescente)
+    """
     permission_classes = [IsAuthenticated]
+    filterset_class = GameLogFilter
+    search_fields = ["game__title"]
+    ordering_fields = ["updated_at", "game__title", "status"]
+    ordering = ["-updated_at"]
 
     def get_serializer_class(self):
         return CreateGameLogSerializer if self.request.method == "POST" else GameLogSerializer
 
     def get_queryset(self):
-        qs = _log_qs(self.request.user)
-        status_filter = self.request.query_params.get("status")
-        if status_filter:
-            qs = qs.filter(status=status_filter)
-        game_id = self.request.query_params.get("game")
-        if game_id:
-            qs = qs.filter(game_id=game_id)
-        return qs
+        return _log_qs(self.request.user)
 
     def create(self, request, *args, **kwargs):
         serializer = CreateGameLogSerializer(data=request.data, context={"request": request})
@@ -97,7 +106,16 @@ def _list_detail_qs():
 
 
 class GameListListCreateView(generics.ListCreateAPIView):
+    """
+    Lista game lists com suporte a filtros:
+    - ?user=username — listas públicas de outro usuário
+    - ?search=texto — busca em título e descrição
+    - ?ordering=title,created_at,updated_at (- para decrescente)
+    """
     permission_classes = [IsAuthenticated]
+    search_fields = ["title", "description"]
+    ordering_fields = ["title", "created_at", "updated_at"]
+    ordering = ["-updated_at"]
 
     def get_serializer_class(self):
         return CreateGameListSerializer if self.request.method == "POST" else GameListSerializer
