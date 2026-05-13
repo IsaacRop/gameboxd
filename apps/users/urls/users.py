@@ -1,5 +1,6 @@
 from django.urls import path
 
+from apps.activity.views import UserActivityView
 from apps.users.views import (
     FollowersListView,
     FollowingListView,
@@ -17,4 +18,5 @@ urlpatterns = [
     path("<str:username>/follow/", FollowView.as_view(), name="user-follow"),
     path("<str:username>/followers/", FollowersListView.as_view(), name="user-followers"),
     path("<str:username>/following/", FollowingListView.as_view(), name="user-following"),
+    path("<str:username>/activity/", UserActivityView.as_view(), name="user-activity"),
 ]

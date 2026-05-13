@@ -5,8 +5,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.activity.models import List, ListGame, Log
+from apps.activity.models import ActivityFeed, List, ListGame, Log
 from apps.activity.serializers import (
+    ActivityFeedSerializer,
     AddGameToListSerializer,
     CreateGameListSerializer,
     CreateGameLogSerializer,
@@ -16,6 +17,7 @@ from apps.activity.serializers import (
     UpdateGameLogSerializer,
 )
 from apps.games.models import Game
+from apps.users.models import Follow, User
 
 
 def _log_qs(user):
@@ -176,3 +178,57 @@ class GameListAddRemoveView(APIView):
         if not deleted:
             return Response({"error": "Jogo não encontrado nesta lista."}, status=status.HTTP_404_NOT_FOUND)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _feed_qs(filters):
+    return (
+        ActivityFeed.objects
+        .filter(**filters)
+        .select_related(
+            "user",
+            "review__game",
+            "game_log__game",
+            "game_list",
+            "followed_user",
+        )
+        .prefetch_related("game_list__games")
+        .order_by("-created_at")
+    )
+
+
+class FeedView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ActivityFeedSerializer
+
+    def get_queryset(self):
+        following_ids = Follow.objects.filter(
+            follower=self.request.user
+        ).values_list("following_id", flat=True)
+        return _feed_qs({"user__in": following_ids})
+
+    def list(self, request, *args, **kwargs):
+        qs = self.get_queryset()
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            if not qs.exists():
+                response.data["message"] = "Siga outros jogadores para ver o feed."
+            return response
+        serializer = self.get_serializer(qs, many=True)
+        data = serializer.data
+        if not data:
+            return Response({"message": "Siga outros jogadores para ver o feed.", "results": []})
+        return Response(data)
+
+
+class UserActivityView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ActivityFeedSerializer
+
+    def get_queryset(self):
+        username = self.kwargs["username"]
+        user = get_object_or_404(User, username=username)
+        return _feed_qs({"user": user}).exclude(
+            Q(event_type=ActivityFeed.LIST_CREATED) & Q(game_list__is_public=False)
+        )
